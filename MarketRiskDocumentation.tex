@@ -1,0 +1,174 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{cite}
+\usepackage{float}
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}
+\newenvironment{sketchproof}{%
+  \renewcommand{\proofname}{Sketch of Proof}\proof}{\endproof}
+  
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\section{Introduction}
+
+This model computes the prices of interest rate derivative securities given \(n\) realizations of the underlying interest rate.  The model is based off risk-neutral interest rates following a Hull-White model which can fit the initial yield curve exactly.  The real-world interest rate dynamics are assumed to follow a Vasicek (time-homogeneous Hull-White) process for simulation purposes.  This framework is chosen for two reasons: it is efficient in pricing a wide range of interest rate options and it provides a suitable first approximation to the risk that may be incurred from movements in interest rates.  Models that provide a better fit to market data (eg, the LIBOR Market Model) are not as flexible in pricing a variety of options.  Models that generalize to multi-dimensional processes (eg, multi-dimensional Hull-White) are more difficult to estimate and are often less efficient for pricing purposes.  
+
+\section{Assumptions}
+
+Like all pricing models, the assumption of NFLVR (No Free Lunch With Vanishing Risk) is used.  This assumption allows the leveraging of the First Fundamental Theorem of Asset Pricing for pricing purposes (ie, all asset prices are martingales when denominated by another asset under a suitable measure and can be written as an expectation).  It is assumed that there exists an asset \(M_t\) which satisfies \(dM_t=r_t M_t dt\) (ie, instantaneously riskless). Solving the ODE gives \(M_t=M_0 e^{\int_0 ^ t r_s ds}\). 
+\\
+\\
+The variable \(r_t\) is assumed to follow a Vasicek (Ornstein Uhlenbeck) process: 
+\[dr_t=a(b-r_t)dt+\sigma dW_t\]
+
+Here \(dW_t\) is an increment of Brownian Motion, \(a\) is the speed of mean reversion, \(b\) is the long run expected value of \(r_t\), and \(\sigma\) is the volatility of the process. This process is chosen for its simplicity and rough approximation of the actual interest rate process.  
+\\
+\\
+
+By Girsonav's theorem, \(d\tilde{W}_t=dW_t-\frac{a(\theta(t)-b)}{\sigma}dt\) is a Brownian Motion under a suitable measure.  Substituting into the equation for the short rate, 
+\[dr_t=a(b-r_t)dt+\sigma\left(d\tilde{W}_t+\frac{a(\theta(t)-b)}{\sigma}dt\right)=a(\theta(t)-r)dt+\sigma d\tilde{W}_t\]
+
+Since this measure change is applicable for \(\sigma>0\), the model does not allow arbitrage and can be used for pricing interest rate securities. In particular, the time dependent parameter \(\theta\) can be calibrated to market data (the yield curve) and then used to price interest rate securities.  
+\\
+\\
+By the Fundamental Theorem of Asset Pricing, the price of a zero coupon bond with par one is \[B(t, T)=M_t\mathbb{\tilde{E}}\left[\frac{1}{M_T}|\mathcal{F}_t \right]\] \[=\mathbb{\tilde{E}}\left[e^{-\int_t ^ T r_s ds}|\mathcal{F}_t \right]\]  The final assumption is that the 7 day LIBOR rate is a reasonable proxy for the short rate \(r_t\) and that the LIBOR rates (implied or actual) from 1 month to 30 years are the yields on zero coupon bonds.  From here on, \(M_t/M_T=e^{-\int_t ^ T r_s ds}\) will be denoted \(D(t, T)\). 
+
+\section{Calibration}
+LIBOR rates extend from 7 days to 1 year.  LIBOR Swap rates extend from one year to 30 years. 
+
+\subsection{Swap}
+
+An interest rate swap is an instrument in which two parties exchange rates: typically fixed for floating.  This exchange is in arrears, that is, after the time period \(\delta\) of the floating rate has passed.  Letting \(B(t, T)\) be the price of a zero coupon bond at time \(t\) maturity and time \(T\), the payoff the receiver of floating is the following:
+
+\[\sum_{i=0} ^ n \frac{1-B(t_i, t_i+\delta)}{B(t_i, t_i+\delta)\delta}-k\]
+Where \(t_0=t\), \(t_n=T\) and \(T\) is the maturity. The price of this swap is
+\[\sum_{i=0}^n \mathbb{\tilde{E}}\left[D(t_0, t_i+\delta)\left(\frac{1-B(t_i, t_i+\delta)}{B(t_i, t_i+\delta)\delta}-k\right)|\mathcal{F}_{t_0}\right]\]
+By convention, this price is zero at the time of origination.  \(k\) is termed the swap rate, and is solved by setting the equation equal to zero:
+\[\sum_{i=0}^n \mathbb{\tilde{E}}\left[D(t_0, t_i+\delta)\left(\frac{1-B(t_i, t_i+\delta)}{B(t_i, t_i+\delta)\delta}-k\right)|\mathcal{F}_{t_0}\right]=0\]
+\[\sum_{i=0}^n \mathbb{\tilde{E}}\left[\frac{D(t_0, t_i+\delta)}{B(t_i, t_i+\delta)}|\mathcal{F}_{t_0}\right]=\sum_{i=0}^n \mathbb{\tilde{E}}\left[D(t_0, t_i+\delta)\left(1+k\delta\right)|\mathcal{F}_{t_0}\right]\]
+
+\[\sum_{i=0}^n B(t_0, t_i)=\sum_{i=0}^n B(t_0, t_i+\delta)\left(1+k\delta\right)\]
+\[k=\frac{1}{\delta}\left(\frac{\sum_{i=0}^n B(t_0, t_i)}{\sum_{i=0}^n B(t_0, t_i+\delta)}-1\right)\]
+
+\(t_i\) is typically chosen as a multiple of \(\delta\).  In this case, the swap rate can be further simplified:
+
+\[k=\frac{1}{\delta}\left(\frac{1-B(t_0, t_n+\delta)+\sum_{i=0}^n B(t_0, t_i+\delta)}{\sum_{i=0}^n B(t_0, t_i+\delta)}-1\right)\]
+\[=\frac{1}{\delta}\left(\frac{1-B(t_0, t_n+\delta)}{\sum_{i=0}^n B(t_0, t_i+\delta)}\right)\]
+
+\subsection{Yield Curve calibration}
+Let \(S(t_0, T, \delta)=k\).  Assume this rate exists for every \(T \in t_m+\delta i\) where \(i\in 0,...N\) where \(N=(30-t_m)/ \delta\) and \(t_m\) is the last maturity of the LIBOR curve (one year out).  Note that this assumption is not restrictive as it is possible to create a spline for the missing dates.  From the definition of \(k\), 
+
+\[S(t_0, t_m, \delta)=\frac{1}{\delta}\left(\frac{1-B(t_0, t_m+\delta)}{\sum_{i=0}^n B(t_0, t_i+\delta)}\right)\]
+
+Note that we have all the values in this expression except for \(B(t_0, t_m+\delta)\).  Solving for this value,
+
+\[S(t_0, t_m, \delta)\delta B(t_0, t_m+\delta)+ S(t_0, t_m, \delta)\delta\sum_{i=0}^{n-1} B(t_0, t_i+\delta)=1-B(t_0, t_m+\delta)\]
+\[B(t_0, t_m+\delta)=\frac{1-\delta S(t_0, t_m, \delta)\sum_{i=0}^{n-1} B(t_0, t_i+\delta)}{S(t_0, t_m, \delta)\delta+1}\]
+
+We can use this iterative equation to create the entire LIBOR curve from seven days to thirty years. A cubic spline (which features continuous derivatives across the spline while matching the observed data) is fit to the bootstrapped curve.
+ 
+\subsection{Bond Price}
+
+Using the bootstrapped yield curve, any bond can be priced as of the current date.  The cash flows are discounted at the zero coupon rate and summed.  However, this does not facilitate the pricing of bonds at some future date.  Hull and White showed that the price of a zero-coupon bond at a date \(t>0\) is 
+\[B(t, T)=\frac{B(0, T)}{B(0, t)}e^{A(t, T)F(t)-\frac{\sigma^2}{4a}A^2 (t, T)\left(1-e^{-2at}\right)-A(t, T)r_t}\]
+Where \(A(t, T)=\frac{1-e^{-a(T-t)}}{a}\) and \(F(t)=-\frac{\partial \mathrm{log}(B(0, t))}{\partial t}\) is the instantaneous forward rate. The instantaneous forward rate is trivially computed from the spline. The time-dependent parameter \(\theta(t)\) is related to \(F(t)\) as follows:\[\theta(t)=\frac{1}{a} \frac{\partial F}{\partial t}+F(t)+\frac{\sigma^2}{2a^2}\left(1-e^{-2at}\right)\]
+
+
+\subsection{Forward Measure}
+The price of a caplet is the following:
+\[c(t, T, \delta; k)=\mathbb{\tilde{E}}\left[D(t, T)\left(\frac{1}{\delta k+1}-B(T, T+\delta)\right)^+ |\mathcal{F}_t\right]\]
+\[=B(t, T)\mathbb{\hat{E}}\left[\left(\frac{1}{\delta k+1}-B(T, T+\delta)\right)^+ |\mathcal{F}_t\right]\]
+Where \(\hat{E}\) is the measure induced by \(B(t, T)\).  Under this measure, the dynamics of \(B(T, T+\delta)\) are 
+\[d\frac{B(t, T+\delta)}{B(t, T)}\]
+\[=\left(\sigma(t, T+\delta)-\sigma(t, T)\right) \frac{B(t, T+\delta)}{B(t, T)}d\hat{W}_t\]
+Where \(\sigma(t, T\) is the volatility of \(B(t, T)\).
+
+\subsection{Bond volatility} \label{bondvolatility}
+In the Hull-White model, the volatility of the bond price is deterministic: \(\sigma(t, T)=\frac{\sigma}{a}(1-e^{-a(T-t)})\)
+\[\implies \sigma(t, T+\delta)-\sigma(t, T)=\frac{\sigma}{a}e^{-a(T-t)}\left(1-e^{-a\delta}\right)\]
+Hence option pricing on the bond reduces to the Black Scholes formula with \[\sigma_{BS}=\sqrt{\frac{1}{T} \int_0 ^ T \left(\frac{\sigma}{a}e^{-a(T-t)}\left(1-e^{-a\delta}\right)\right)^2 dt}\]
+\[\sigma_{BS}=\frac{\sigma}{a}\left(1-e^{-a\delta}\right)\sqrt{\frac{1}{T} \int_0 ^ T e^{-2a(T-t)} dt}\]
+\[\sigma_{BS}=\frac{\sigma}{a}\left(1-e^{-a\delta}\right)\sqrt{\frac{1-e^{-2aT}}{2aT}}\]
+
+Note that the volatility depends only on \(a\) and \(\sigma\) and hence these parameters can be calibrated to the cap market. However, in the absence of free market data on caplet prices, \(a\) and \(\sigma\) are inputs provided by the user for demonstration purposes.  
+
+\subsection{Calibration to historical data}
+ Recall that \(r_t=a(b-r_t)dt+\sigma dW_t\).  \(a\) and \(\sigma\) are already known.  \(r_t\) has the following solution:
+\[r_T= e^{-a(T-t)}r_t+b\left(1-e^{-a(T-t)}\right)+\epsilon_{T-t}\]
+Where \(\epsilon_{T-t}\) is white noise.  Solving for \(b\),
+
+\[b=\frac{r_T-e^{-a(T-t)}r_t}{1-e^{-a(T-t)}}+\hat{\epsilon_{T-t}}\]
+
+Given a time series of observations of \(r_{t_i}\) it is thus trivial to estimate \(b\).
+
+\section{Pricing Modules}
+The following ``generic'' functions are available: tree (lattice) methods (\ref{tree}), analytic Black Scholes formula (\ref{BS}), and Jamshidian's trick for finding options on a portfolio (\ref{Jamshidian}). From these generic functions, the fixed income derivatives can be priced. The validity of the generic functions were tested against each other and against Monte Carlo simulations.
+\subsection{Caplet and Bond option equivalency}
+ The value of a caplet is 
+  
+\[\delta\mathbb{\tilde{E}}\left[D(t, T+\delta)\left(\frac{1-B(T, T+\delta)}{\delta B(T, T+\delta)}-k\right)^+ |\mathcal{F}_t\right]\]
+
+\[=\delta\mathbb{\tilde{E}}\left[D(t, T+\delta)\left(\frac{1}{\delta B(T, T+\delta)}-k-\frac{1}{\delta}\right)^+ |\mathcal{F}_t\right]\]
+ 
+\[=\delta\mathbb{\tilde{E}}\left[D(t, T)\left(\frac{ \mathbb{\tilde{E}}[D(T, T+\delta)|\mathcal{F}_T]}{\delta B(T, T+\delta)}-\mathbb{\tilde{E}}[D(T, T+\delta)|\mathcal{F}_T]\left(k+\frac{1}{\delta}\right)\right)^+ |\mathcal{F}_t\right]\]
+
+\[=\delta\mathbb{\tilde{E}}\left[D(t, T)\left(\frac{1}{\delta}-B(T, T+\delta)\left(k+\frac{1}{\delta}\right)\right)^+ |\mathcal{F}_t\right]\]
+\[=\left(\delta k+1\right)\mathbb{\tilde{E}}\left[D(t, T)\left(\frac{1}{\delta k+1}-B(T, T+\delta)\right)^+ |\mathcal{F}_t\right]\]
+\[=\left(k\delta+1\right)P\left(\frac{1}{\delta k +1}\right)\] Where \(P(\cdot)\) is a put on a bond with strike \(\cdot\).
+
+\subsection{Euro Dollar Futures}
+The future price satisfies \[\delta f(t, T; \delta)=\tilde{\mathbb{E}}\left[\frac{1}{B(T, T+\delta)}|\mathcal{F}_t\right]-1\]
+
+In a Hull-White model, the future price is \[\delta f(t, T; \delta)=\frac{B(t, T)}{B(t, T+\delta)}e^{\gamma(t, T, \delta)}-1\]
+For some deterministic function \(\gamma\).  This function is \[\int_t ^ T \sigma_B (s, T+\delta)\left(\sigma_B(s, T+\delta)-\sigma_B(s, T)\right)ds\]
+
+This equals \(\frac{\sigma^2}{a^3}\left(1-e^{-a\delta}\right)\left(1-e^{-a(T-t)}-\frac{e^{-a\delta}}{2}\left(1-e^{-2a(T-t)}\right)\right)\).
+
+ \subsection{Equivalence of Option on Coupon Bond and European Swaption}
+ 
+ A swaption is the right to enter a swap at a future date at a predetermined swap rate.  This can be written as
+ \[\mathbb{\tilde{E}} \left[D(t, T)\left(1-\sum c_j B(T, T_j) \right) | \mathcal{F}_t \right]\]
+ Where \(c_j=k\delta,\,j<n\) and \(c_n=1+k\delta\).  Hence a swaption is a put on a coupon bond with coupon rate \(k\delta\) and strike \(1\).  
+ 
+\subsection{American Swaption}
+
+Note that in the Hull-White model that the short rate can be decomposed as \(r_t=\phi(t)+x_t\) where \(\theta(t)=\frac{\phi'(t)}{a}+\phi(t)\) and \(dx_t=-ax_t dt+\sigma dW_t\).  As there is no analytic formula for American options, the tree method is used to step backwards in time.  The tree is solved in \(x\) and then \(\phi(t)\) is added to the result for pricing and discounting.  
+
+\section{Appendix}
+
+\subsection{Tree Methods} \label{tree}
+Consider the SDE \(dX=\alpha(X, t)dt+\sigma(X, t)dW_t\).  Now consider \(f(y)\) such that \(f'(y)=\frac{1}{\sigma(y, t)}\).  Then \[df(X)=\frac{1}{\sigma(X, t)} \alpha(X, t)dt+dW_t-\frac{\sigma^2(X, t)\sigma'(X)dt}{2\sigma^2(X, t)}\]
+
+\[=\left(\frac{\alpha(X, t)}{\sigma(X, t)}-\frac{\sigma'(X)}{2}\right)dt+dW_t\]
+ 
+ This dynamic can lead to a recombining tree.  Letting \(y=f(x)\) then \(u_i=y_0+(m-i)\sqrt{\Delta t}\) and \(d_i=y_0-(m-i)\sqrt{\Delta t}\).  The actual value at each node is given by \(f^{-1}(u_i)\). The probability of the move is solved by \(p*u+(1-p)*d=\left(\frac{\alpha(X, t)}{\sigma(X, t)}-\frac{\sigma'(X)}{2}\right)\Delta t\). 
+ 
+ \[p\sqrt{\Delta t}-(1-p)\sqrt{\Delta t}=\left(\frac{\alpha(X, t)}{\sigma(X, t)}-\frac{\sigma'(X)}{2}\right)\Delta t\]
+  \[2p-1=\left(\frac{\alpha(X, t)}{\sigma(X, t)}-\frac{\sigma'(X)}{2}\right)\sqrt{\Delta t}\]
+  \[p=\frac{1}{2}\left(\frac{\alpha(X, t)}{\sigma(X, t)}-\frac{\sigma'(X)}{2}\right)\sqrt{\Delta t}+\frac{1}{2}\]
+  
+\subsection{Black Scholes} \label{BS}
+  Given a discount factor \(P(t, T)\) and an underlying asset \(S_T\) which is log-normally distributed, a vanilla option on \(S_T\) with strike \(k\) with maturity \(T\) and cumulative volatility \(\sigma \sqrt{T}\) is given by the Black Scholes formula.  In particular, for a call option,
+  \[C(S_t; k, t, T \sigma)=S_t \mathcal{N}(d_1)-kP(t, T)\mathcal{N}(d_1-\sigma \sqrt{T})\]
+  Where \(d_1=\mathrm{log}\left(\frac{S_t}{kP(t, T)}\right)/\sigma \sqrt{T}+\frac{1}{2}\sigma \sqrt{T}\).
+  \\
+  \\
+  In a fixed income setting, the underlying asset is a bond denominated by a bond of same tenor as the option.  The discount factor and the asset are hence both bonds, and the ``\(\sigma\)'' is equal to the square root of the integral of the squared difference between the volatilities of the bonds; see (\ref{bondvolatility}). 
+  
+  
+\subsection{Jamshidian's Trick} \label{Jamshidian}
+
+Jamshidian pointed out that an option with payoff \(\left(\sum f(r) -k\right)^+\) is equal to a portfolio of options \(\sum (f(r)-f(r_*))^+\) where \(r_*\) is the solution to \(\sum f(r)-f(r_*)=0\) and \(f\) is a monotonic function. Hence an option on a coupon bond can be written as a series of options on zero coupon bonds.   Solving for \(r_*\) involves Newton's method for finding the zero's of a function which can be trivially implemented with automatic differentiation.  
+
+
+
+
+
+
+
+\end{document}
