@@ -1,7 +1,7 @@
 name: Upload PDF
 on:
   release:
-    types: [publish]
+    types: [created]
     # Sequence of patterns matched against refs/tags
     # - publish
     # - '*' # Push events to matching v*, i.e. v1.0, v20.15.10
