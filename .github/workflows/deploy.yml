@@ -1,9 +1,10 @@
 name: Upload PDF
 on:
-  push:
+  release:
+    types: [publish]
     # Sequence of patterns matched against refs/tags
-    tags:
-    - '*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    # - publish
+    # - '*' # Push events to matching v*, i.e. v1.0, v20.15.10
  
 jobs:
   build:
@@ -11,28 +12,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Compile LaTeX document
       uses: xu-cheng/latex-action@master
       with:
         root_file: MarketRiskDocumentation.tex
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #- name: Create Release
+    #  id: create_release
+    #  uses: actions/create-release@v1
+    #  env:
+    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #  with:
+    #    tag_name: ${{ github.ref }}
+    #    release_name: Release ${{ github.ref }}
+    #    draft: false
+    #    prerelease: false
+    - name: Release
+      uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
-    - name: Upload Release Asset
-      id: upload-release-asset 
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-        asset_path: ./MarketRiskDocumentation.pdf
-        asset_name: MarketRiskDocumentation.pdf
-        asset_content_type: application/pdf
+        files: MarketRiskDocumentation.pdf
+    #- name: Upload Release Asset
+    #  id: upload-release-asset 
+    #  uses: actions/upload-release-asset@v1
+    #  env:
+    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #  with:
+    #    upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+    #    asset_path: ./MarketRiskDocumentation.pdf
+    #    asset_name: MarketRiskDocumentation.pdf
+    #    asset_content_type: application/pdf
