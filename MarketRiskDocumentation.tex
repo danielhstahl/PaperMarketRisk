@@ -132,7 +132,7 @@ This equals \(\frac{\sigma^2}{a^3}\left(1-e^{-a\delta}\right)\left(1-e^{-a(T-t)}
  \subsection{Equivalence of Option on Coupon Bond and European Swaption}
  
  A swaption is the right to enter a swap at a future date at a predetermined swap rate.  This can be written as
- \[\mathbb{\tilde{E}} \left[D(t, T)\left(1-\sum c_j B(T, T_j) \right) | \mathcal{F}_t \right]\]
+ \[\mathbb{\tilde{E}} \left[D(t, T)\left(1-\sum c_j B(T, T_j) \right)^+ | \mathcal{F}_t \right]\]
  Where \(c_j=k\delta,\,j<n\) and \(c_n=1+k\delta\).  Hence a swaption is a put on a coupon bond with coupon rate \(k\delta\) and strike \(1\).  
  
 \subsection{American Swaption}
